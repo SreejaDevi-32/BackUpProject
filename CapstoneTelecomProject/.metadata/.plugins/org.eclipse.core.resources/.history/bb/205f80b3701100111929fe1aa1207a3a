@@ -1,0 +1,5 @@
+package com.virtusa.telecom.payment.payment_service.entity;
+
+public class Payment {
+
+}

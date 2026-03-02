@@ -1,0 +1,22 @@
+package com.virtusa.telecom.subscription.subscription_service.service;
+
+import java.util.List;
+import java.util.UUID;
+
+import com.virtusa.telecom.subscription.subscription_service.dto.PaymentSuccessEvent;
+import com.virtusa.telecom.subscription.subscription_service.dto.SubscribeRequest;
+import com.virtusa.telecom.subscription.subscription_service.dto.SubscribeResponse;
+import com.virtusa.telecom.subscription.subscription_service.entity.Subscription;
+
+public interface SubscriptionService {
+	
+	public SubscribeResponse subscribe(SubscribeRequest request);
+	
+	public void rollbackSubscription(UUID subscriptionId, String reason);
+	
+	
+	public List<Subscription> getUserSubscription(UUID userId);
+	
+	public String updateSubscriptionStatus(PaymentSuccessEvent paymentSuccessEvent);
+
+}

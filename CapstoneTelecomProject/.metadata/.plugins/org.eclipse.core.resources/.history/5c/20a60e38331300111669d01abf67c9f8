@@ -1,0 +1,38 @@
+services:
+
+  mysql:
+    image: mysql:8.0
+    container_name: notification-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: notification_db
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - notification-network
+
+  notification-service:
+    image: notification-service:latest
+    container_name: notification-ms
+    restart: always
+    depends_on:
+      - mysql
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/notification_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      SMTP_USERNAME: aa2740b254d3cb
+      SMTP_PASSWORD: b9967c6b22821b
+    networks:
+      - notification-network
+
+volumes:
+  mysql_data:
+
+networks:
+  notification-network:

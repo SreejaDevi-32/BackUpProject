@@ -1,0 +1,44 @@
+package com.virtusa.telecom.utility.commonlib;
+
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.data.domain.Sort;
+import org.springframework.validation.annotation.Validated;
+
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+@Validated
+@ConfigurationProperties(prefix = "app.pagination")
+public class PaginationProperties {
+
+    @Min(1)
+    private int defaultSize;
+
+    @Min(1)
+    @Max(1000)
+    private int maxSize;
+
+    @Valid
+    @NotNull
+    private SortConfig defaultSort;
+
+    @Getter
+    @Setter
+    public static class SortConfig {
+
+        @NotBlank
+        private String field;
+
+        @NotNull
+        private Sort.Direction direction;
+    }
+}

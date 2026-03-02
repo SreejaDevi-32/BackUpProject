@@ -1,0 +1,19 @@
+package com.virtusa.telecom.subscription.subscription_service.client;
+
+import java.util.UUID;
+
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+
+import com.virtusa.telecom.subscription.subscription_service.dto.PlanDto;
+
+@FeignClient(
+		name = "plan-service",
+		url = "${feign.client.config.plan-service.url}"
+		)
+public interface PlanClient {
+	
+	@GetMapping("/{id}")
+	PlanDto getPlanById(@PathVariable UUID id);
+}

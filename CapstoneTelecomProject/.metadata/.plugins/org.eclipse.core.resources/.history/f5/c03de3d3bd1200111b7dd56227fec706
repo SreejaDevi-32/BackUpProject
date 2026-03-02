@@ -1,0 +1,24 @@
+package com.virtusa.telecom.subscription.subscription_service.repository;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.virtusa.telecom.subscription.subscription_service.entity.Subscription;
+import com.virtusa.telecom.subscription.subscription_service.systemconstants.SubscriptionStatus;
+
+public interface SubscriptionRepository extends JpaRepository<Subscription,UUID>{
+	
+	Optional<Subscription> findByUserIdAndStatus(UUID userId, SubscriptionStatus status);
+	
+	boolean existsByUserIdAndStatus(UUID userId, SubscriptionStatus status);
+	
+	void deleteById(Long id);
+	
+	List<Subscription> findByUserId(UUID userId);
+	
+	Optional<Subscription> findById(Long id);
+
+}

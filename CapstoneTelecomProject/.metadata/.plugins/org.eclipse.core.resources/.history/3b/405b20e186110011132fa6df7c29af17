@@ -1,0 +1,6 @@
+package com.virtusa.telecom.payment.payment_service.service;
+
+public interface StripePaymentService {
+	//public PaymentIntent createPaymentIntent(BigDecimal amount, String txRef, Long userId);
+
+}

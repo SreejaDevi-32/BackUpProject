@@ -1,0 +1,31 @@
+package com.virtusa.telecom.user.user_service.dto;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Pattern;
+import lombok.Data;
+
+@Data
+public class UserRegistrationRequest {
+	
+	@NotEmpty(message = "FirstName can not be a null or empty")
+	private String firstName;
+	
+	@NotEmpty(message = "Lastname can not be a null or empty")
+	private String lastName;
+	
+	@NotBlank(message = "Email is required")
+	@Email(message = "Invalid email format")
+	private String email;
+	
+	@Pattern(regexp = "(^$|[0-9]{10})", message = "Mobile number must be 10 digits")
+	private String phoneNumber;
+	
+	@NotBlank(message = "Phone number is required")
+	@Pattern(regexp = "^[0-9]{10}$", message = "Phone number must be exactly 10 digits")
+	private String password;
+	
+	private boolean active;
+
+}

@@ -1,0 +1,9 @@
+package com.virtusa.telecom.subscription.subscription_service.exception;
+
+import java.util.UUID;
+
+public class PlanNotFoundException extends RuntimeException {
+    public PlanNotFoundException(UUID planId) {
+        super("Plan not found with id: " + planId);
+    }
+}

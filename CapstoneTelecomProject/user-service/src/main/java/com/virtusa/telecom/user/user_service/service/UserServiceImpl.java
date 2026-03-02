@@ -1,0 +1,103 @@
+package com.virtusa.telecom.user.user_service.service;
+
+import java.util.List;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import com.virtusa.telecom.user.user_service.dto.AuthResponse;
+import com.virtusa.telecom.user.user_service.dto.UserLoginRequest;
+import com.virtusa.telecom.user.user_service.dto.UserRegistrationRequest;
+import com.virtusa.telecom.user.user_service.entity.User;
+import com.virtusa.telecom.user.user_service.exception.DuplicateUserException;
+import com.virtusa.telecom.user.user_service.exception.InvalidCredentialsException;
+import com.virtusa.telecom.user.user_service.exception.ResourceNotFoundException;
+import com.virtusa.telecom.user.user_service.repository.UserRepository;
+import com.virtusa.telecom.user.user_service.systemconstants.Role;
+import com.virtusa.telecom.utility.commonlib.AesEncryptor;
+import com.virtusa.telecom.utility.commonlib.HashUtil;
+
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class UserServiceImpl implements UserService {
+	
+	public final UserRepository userRepo;
+	public final AesEncryptor aesUtil;
+	private final HashUtil hashUtil;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtProvider;
+	
+	
+
+	@Override
+	@Transactional
+	public User registerUser(UserRegistrationRequest request) {
+		
+		log.info("Received Registration Request for User= {}",request.getEmail());
+		
+		String emailHash = hashUtil.hash(request.getEmail());
+		String phoneHash = hashUtil.hash(request.getPhoneNumber());
+
+	    if (userRepo.existsByEmailHashOrPhoneHash(emailHash , phoneHash)) { 
+	    	log.warn("User Already Registered with emailId ={} and phone number={}",
+	    			request.getEmail(),request.getPhoneNumber());
+	        throw new DuplicateUserException(); 
+
+	    } 
+
+	    
+	    User user = User.builder()
+	    		.firstName(aesUtil.encrypt(request.getFirstName()))
+	    		.lastName(aesUtil.encrypt(request.getLastName()))
+	    		.email(aesUtil.encrypt(request.getEmail()))
+	    		.emailHash(emailHash)
+	    		.phoneNumber(aesUtil.encrypt(request.getPhoneNumber()))
+	    		.phoneHash(phoneHash)
+	    		.passwordHash(passwordEncoder.encode(request.getPassword()))
+	    		.active(true)
+	    		.build();
+	    user.getRoles().add(Role.ROLE_ADMIN);
+	    
+	    userRepo.save(user);  
+	    log.info("User Registered Successfully with email = {}",request.getEmail());
+
+	    //notificationProducer.publishUserRegisteredEvent(user);
+
+	    return user; 
+	}
+
+
+	@Override
+	public AuthResponse login(UserLoginRequest request) {
+		// TODO Auto-generated method stub
+		String emailHash = hashUtil.hash(request.getEmail());
+		
+		User user = userRepo.findByEmailHash(emailHash)
+							.orElseThrow(() -> {
+							 log.error("User not found with id={}", request.getEmail());
+							return new ResourceNotFoundException("User not found");
+							});
+		
+		
+		if(!passwordEncoder.matches(request.getPassword(),user.getPasswordHash())) {
+			
+			log.warn("Invalid Credentails Username or Password");
+			throw new InvalidCredentialsException("Invalid Username or Password");
+		}
+		List<String> roles = user.getRoles()
+								.stream()
+								.map(Enum::name)
+								.toList();
+		
+		 String token = jwtProvider.generateToken(user.getUserId(),roles);
+
+		 log.info("User login Successfully with Token={}",token);
+	        return new AuthResponse(token);
+	}
+
+}

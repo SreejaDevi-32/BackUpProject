@@ -1,0 +1,20 @@
+package com.virtusa.telecom.payment.payment_service.repository;
+
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.virtusa.telecom.payment.payment_service.entity.Payment;
+
+
+public interface PaymentRepository extends JpaRepository<Payment,UUID>{
+	boolean existsBySubscriptionId(UUID subscriptionId);
+	
+	Optional<Payment> findById(UUID paymentId);
+	 
+	Optional<Payment> findBySubscriptionId(UUID subscriptionId);
+	
+	Optional<Payment> findBySagaId(String sagaId);
+
+}

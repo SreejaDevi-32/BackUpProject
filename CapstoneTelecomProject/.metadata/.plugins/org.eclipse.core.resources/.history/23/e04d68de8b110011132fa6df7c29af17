@@ -1,0 +1,16 @@
+package com.virtusa.telecom.payment.payment_service.service;
+
+import java.math.BigDecimal;
+
+import org.springframework.beans.factory.annotation.Value;
+
+import com.stripe.Stripe;
+import com.stripe.exception.StripeException;
+import com.stripe.model.PaymentIntent;
+import com.stripe.param.PaymentIntentCreateParams;
+
+import jakarta.annotation.PostConstruct;
+
+public class StripePaymentGateway {
+	
+}

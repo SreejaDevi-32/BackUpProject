@@ -1,0 +1,149 @@
+package com.virtusa.telecom.payment.payment_service.service;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+import org.springframework.cloud.stream.function.StreamBridge;
+import org.springframework.stereotype.Service;
+
+import com.virtusa.telecom.payment.payment_service.dto.GatewayRequest;
+import com.virtusa.telecom.payment.payment_service.dto.GatewayResponse;
+import com.virtusa.telecom.payment.payment_service.dto.PaymentFailedEvent;
+import com.virtusa.telecom.payment.payment_service.dto.PaymentResponse;
+import com.virtusa.telecom.payment.payment_service.dto.PaymentSuccessEvent;
+import com.virtusa.telecom.payment.payment_service.dto.SubscriptionCreatedEvent;
+import com.virtusa.telecom.payment.payment_service.entity.Payment;
+import com.virtusa.telecom.payment.payment_service.exception.PaymentNotFoundException;
+import com.virtusa.telecom.payment.payment_service.repository.PaymentRepository;
+import com.virtusa.telecom.payment.payment_service.systemconstants.PaymentMode;
+import com.virtusa.telecom.payment.payment_service.systemconstants.PaymentStatus;
+
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+
+import lombok.extern.slf4j.Slf4j;
+
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class PaymentService {
+
+    private final PaymentRepository paymentRepository;
+    private final PaymentGateway paymentGateway;
+    private final StreamBridge streamBridge;
+
+    @Transactional
+    public void processPayment(SubscriptionCreatedEvent event) {
+
+    	log.info("Received payment request for subscriptionId={}, userId={}, amount={}",
+                event.subscriptionId(),
+                event.userId(),
+                event.amount());
+
+        if (paymentRepository.existsBySubscriptionId(event.subscriptionId())) {
+            log.warn("Payment already exists for subscriptionId={}", event.subscriptionId());
+            return;
+        }
+
+        Payment payment = Payment.builder()
+                .subscriptionId(event.subscriptionId())
+                .userId(event.getUserId())
+                .amount(event.getAmount())
+                .status(PaymentStatus.PENDING)
+                .paymentMode(PaymentMode.CARD)
+                .build();
+
+        paymentRepository.save(payment);
+
+        log.info("Payment record created with id={} and status=PENDING", payment.getId());
+
+        GatewayResponse response = paymentGateway.charge(
+                GatewayRequest.builder()
+                        .subscriptionId(event.subscriptionId())
+                        .userId(event.getUserId())
+                        .amount(event.getAmount())
+                        .build()
+        );
+
+        if (response.isSuccess()) {
+
+            log.info("Payment successful for subscriptionId={}, transactionId={}",
+                    payment.getSubscriptionId(),
+                    response.getTransactionId());
+
+            payment.setStatus(PaymentStatus.SUCCESS);
+            payment.setGatewayTransactionId(response.getTransactionId());
+
+            streamBridge.send("paymentSuccess-out-0",
+                    PaymentSuccessEvent.builder()
+                            .paymentId(payment.getId())
+                            .subscriptionId(payment.getSubscriptionId())
+                            .userId(payment.getUserId())
+                            .amount(payment.getAmount())
+                            .transactionId(payment.getGatewayTransactionId())
+                            .processedAt(LocalDateTime.now())
+                            .build());
+
+            log.info("PaymentSuccessEvent published for paymentId={}", payment.getId());
+
+        } else {
+
+            log.error("Payment failed for subscriptionId={}, reason={}",
+                    payment.getSubscriptionId(),
+                    response.getFailureReason());
+
+            payment.setStatus(PaymentStatus.FAILED);
+            payment.setFailureReason(response.getFailureReason());
+
+            streamBridge.send("paymentFailed-out-0",
+                    PaymentFailedEvent.builder()
+                            .subscriptionId(payment.getSubscriptionId())
+                            .userId(payment.getUserId())
+                            .failureReason(payment.getFailureReason())
+                            .processedAt(LocalDateTime.now())
+                            .build());
+
+            log.warn("PaymentFailedEvent published for subscriptionId={}",
+                    payment.getSubscriptionId());
+        }
+    }
+
+    public PaymentResponse getPaymentById(UUID paymentId) {
+
+        log.debug("Fetching payment by id={}", paymentId);
+
+        Payment existingPayment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> {
+                    log.error("Payment not found with id={}", paymentId);
+                    return new PaymentNotFoundException("Payment Not Found");
+                });
+
+        return mapToResponse(existingPayment);
+    }
+
+    public PaymentResponse getPaymentBySubscriptionId(UUID subscriptionId) {
+
+        log.debug("Fetching payment by subscriptionId={}", subscriptionId);
+
+        Payment existingPayment = paymentRepository.findBySubscriptionId(subscriptionId)
+                .orElseThrow(() -> {
+                    log.error("Payment not found for subscriptionId={}", subscriptionId);
+                    return new PaymentNotFoundException("Payment Not Found");
+                });
+
+        return mapToResponse(existingPayment);
+    }
+
+    private PaymentResponse mapToResponse(Payment payment) {
+        return PaymentResponse.builder()
+                .id(payment.getId())
+                .subscriptionId(payment.getSubscriptionId())
+                .userId(payment.getUserId())
+                .amount(payment.getAmount())
+                .status(payment.getStatus())
+                .transactionId(payment.getGatewayTransactionId())
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+}

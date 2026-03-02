@@ -1,0 +1,5 @@
+package com.virtusa.telecom.subscription.subscription_service.service;
+
+public class ResourceNotFoundException {
+
+}

@@ -1,0 +1,108 @@
+package com.virtusa.telecom.subscription.subscription_service.service;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.beans.BeanUtils;
+import org.springframework.cloud.stream.function.StreamBridge;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
+
+import com.virtusa.telecom.subscription.subscription_service.client.PlanClient;
+import com.virtusa.telecom.subscription.subscription_service.dto.PlanDto;
+import com.virtusa.telecom.subscription.subscription_service.dto.SubscribeRequest;
+import com.virtusa.telecom.subscription.subscription_service.dto.SubscribeResponse;
+import com.virtusa.telecom.subscription.subscription_service.dto.SubscriptionCancelledEvent;
+import com.virtusa.telecom.subscription.subscription_service.dto.SubscriptionCreatedEvent;
+import com.virtusa.telecom.subscription.subscription_service.entity.Subscription;
+import com.virtusa.telecom.subscription.subscription_service.exception.ActiveSubscriptionAlreadyExistsException;
+import com.virtusa.telecom.subscription.subscription_service.exception.PlanNotFoundException;
+import com.virtusa.telecom.subscription.subscription_service.exception.SubscriptionNotFoundException;
+import com.virtusa.telecom.subscription.subscription_service.repository.SubscriptionRepository;
+import com.virtusa.telecom.subscription.subscription_service.systemconstants.SubscriptionStatus;
+
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Service
+@Transactional
+@RequiredArgsConstructor
+@Slf4j
+public class SubscriptionServiceImpl implements SubscriptionService{
+	
+	private final SubscriptionRepository repository;
+	private final ApplicationEventPublisher eventPublisher;
+    private final PlanClient planClient;
+
+	@Override
+	public SubscribeResponse subscribe(SubscribeRequest request) {
+		// TODO Auto-generated method stub
+		
+		if(repository.existsByUserIdAndStatus(request.getUserId(), SubscriptionStatus.ACTIVE))
+		{
+			 throw new ActiveSubscriptionAlreadyExistsException(request.getUserId());
+		}
+		
+		//PlanDto plan = planClient.getPlanById(request.getPlanId());
+		PlanDto plan;
+		try {
+		    plan = planClient.getPlanById(request.getPlanId());
+		} catch (Exception ex) {
+		    throw new PlanNotFoundException(request.getPlanId());
+		}
+		Subscription subscription = Subscription.builder()
+                .userId(request.getUserId())
+                .planId(plan.getId())
+                .planName(plan.getName())
+                .price(plan.getPrice())
+                .startDate(LocalDate.now())
+                .endDate(LocalDate.now()
+                        .plusDays(plan.getValidityDays()))
+                .status(SubscriptionStatus.ACTIVE)
+                .build();
+
+        Subscription saved = repository.save(subscription);   
+        String sagaId = UUID.randomUUID().toString();
+        eventPublisher.publishEvent(
+        		new SubscriptionCreatedEvent(
+        				saved,
+        				request.getEmail(),
+        				request.getPhoneNumber(),
+        				sagaId, sagaId
+        				)
+        		);
+        SubscribeResponse response = new SubscribeResponse();
+        BeanUtils.copyProperties(saved, response);
+		return response;
+	}
+	
+	@Override
+	public void rollbackSubscription(Long subscriptionId, String reason)
+	{
+		Subscription subscription = repository.findById(subscriptionId)
+				.orElseThrow(() -> new SubscriptionNotFoundException(subscriptionId));
+		
+		if(subscription.getStatus()==SubscriptionStatus.ROLLED_BACK)
+		{
+			log.info("Subscription {} already rolled back", subscriptionId);
+			return ;
+		}
+		
+		subscription.setStatus(SubscriptionStatus.ROLLED_BACK);
+		repository.save(subscription);
+		
+		 log.info("Subscription {} rolled back due to {}", subscriptionId, reason);
+	}
+	
+	
+	@Override
+	public List<Subscription> getUserSubscription(UUID userId) {
+		// TODO Auto-generated method stub
+		return repository.findByUserId(userId);
+	}
+
+	
+}

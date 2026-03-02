@@ -1,0 +1,29 @@
+package com.virtusa.telecom.notification.notification_service.service;
+
+import org.springframework.stereotype.Service;
+
+import com.virtusa.telecom.notification.notification_service.dto.NotificationRequest;
+import com.virtusa.telecom.notification.notification_service.repository.NotificationRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class NotificationManager {
+
+    private final NotificationFactory factory;
+    private final NotificationRepository repository;
+
+    public void sendNotification(NotificationRequest request) {
+    	log.info("Notification Comes to Notification Manager");
+
+        NotificationService service =
+                factory.getService(request.getChannel().toString());
+
+        service.send(request);
+
+        // Save to DB
+    }
+}

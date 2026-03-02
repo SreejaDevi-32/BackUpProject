@@ -1,0 +1,12 @@
+package com.virtusa.telecom.configserver.telecom_config_server;
+
+/*
+ * import org.junit.jupiter.api.Test; import
+ * org.springframework.boot.test.context.SpringBootTest;
+ * 
+ * @SpringBootTest class TelecomConfigServerApplicationTests {
+ * 
+ * @Test void contextLoads() { }
+ * 
+ * }
+ */

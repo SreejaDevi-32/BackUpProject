@@ -1,0 +1,42 @@
+package com.virtusa.telecom.subscription.subscription_service.functions;
+
+import java.util.function.Consumer;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import com.virtusa.telecom.subscription.subscription_service.dto.SubscribeRequest;
+import com.virtusa.telecom.subscription.subscription_service.dto.SubscriptionCreatedEvent;
+import com.virtusa.telecom.subscription.subscription_service.dto.SubscriptionRollbackEvent;
+import com.virtusa.telecom.subscription.subscription_service.entity.Subscription;
+import com.virtusa.telecom.subscription.subscription_service.service.SubscriptionService;
+
+import lombok.extern.slf4j.Slf4j;
+
+@Configuration
+@Slf4j
+public class SubscriptionFunctions {
+	
+	
+	@Bean
+	public Consumer<SubscriptionRollbackEvent> rollbackSubscription(SubscriptionService subscriptionService)
+	{
+		return event -> {
+			log.info("Rollback Requested: {}",event);
+			subscriptionService.rollbackSubscription(event.getSubscriptionId(), event.getReason());
+		};
+		
+	}
+	
+	@Bean
+	public Consumer<SubscriptionRollbackEvent> paymentSuccess(SubscriptionService subscriptionService)
+	{
+		return successEvent -> {
+			log.info("Rollback Requested: {}",successEvent);
+			subscriptionService.updateSubscriptionStatus(successEvent);
+		};
+		
+	}
+	
+
+}

@@ -1,0 +1,13 @@
+package com.virtusa.telecom.payment.payment_service.service;
+
+import com.virtusa.telecom.payment.payment_service.dto.SubscriptionCreatedEvent;
+
+public class PaymentServiceImpl implements PaymentService{
+
+	@Override
+	public void processPayment(SubscriptionCreatedEvent event) {
+		// TODO Auto-generated method stub
+		
+	}
+
+}

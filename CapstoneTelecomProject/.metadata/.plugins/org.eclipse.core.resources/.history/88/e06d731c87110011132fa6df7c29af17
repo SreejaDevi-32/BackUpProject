@@ -1,0 +1,15 @@
+package com.virtusa.telecom.payment.payment_service.service;
+
+import java.math.BigDecimal;
+
+import com.stripe.model.PaymentIntent;
+
+public class StripePaymentServiceImpl implements StripePaymentService{
+
+	@Override
+	public PaymentIntent createPaymentIntent(BigDecimal amount, String txRef, Long userId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

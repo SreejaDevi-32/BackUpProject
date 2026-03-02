@@ -1,0 +1,18 @@
+package com.virtusa.telecom.user.user_service.audit;
+
+import java.util.Optional;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.data.domain.AuditorAware;
+
+@Configuration
+public class AuditorConfig {
+
+    @Bean
+    @Primary
+    public AuditorAware<String> auditorProvider() {
+        return () -> Optional.of("user-service");
+    }
+}

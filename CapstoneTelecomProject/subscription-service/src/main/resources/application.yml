@@ -1,0 +1,71 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: SUBSCRIPTION-SERVICE
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/telecom
+    username: root
+    password: Sreeja@123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  config:
+    import: optional:configserver:http://localhost:8071
+
+  cloud:
+    function:
+      definition: rollbackSubscription
+
+    stream:
+      bindings:
+        subscriptionCreated-out-0:
+          destination: subscription-created
+          content-type: application/json
+
+        rollbackSubscription-in-0:
+          destination: subscription-rollback
+          content-type: application/json
+          
+        paymentSuccess-in-0:
+          destination: payment-success
+          group: payment-success
+          content-type: application/json
+
+      kafka:
+        binder:
+          brokers: localhost:9092
+
+eureka:
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+  client:
+    fetch-registry: true
+    register-with-eureka: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+  health:
+    readiness-state:
+      enabled: true
+    liveness-state:
+      enabled: true

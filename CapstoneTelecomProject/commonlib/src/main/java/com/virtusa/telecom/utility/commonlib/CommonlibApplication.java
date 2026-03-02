@@ -1,0 +1,15 @@
+package com.virtusa.telecom.utility.commonlib;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+
+@SpringBootApplication
+@EnableConfigurationProperties(PaginationProperties.class)
+public class CommonlibApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(CommonlibApplication.class, args);
+	}
+
+}

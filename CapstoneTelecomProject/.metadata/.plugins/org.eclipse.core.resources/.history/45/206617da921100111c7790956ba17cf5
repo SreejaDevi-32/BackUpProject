@@ -1,0 +1,20 @@
+package com.virtusa.telecom.subscription.subscription_service.dto;
+
+@Getter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class PaymentSuccessEvent {
+
+    private UUID paymentId;
+
+    private UUID subscriptionId;
+
+    private UUID userId;
+
+    private BigDecimal amount;
+
+    private String transactionId;
+
+    private LocalDateTime processedAt;
+}

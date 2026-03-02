@@ -1,0 +1,74 @@
+package com.virtusa.telecom.payment.payment_service.service;
+
+import org.springframework.cloud.stream.function.StreamBridge;
+import org.springframework.stereotype.Service;
+
+import com.virtusa.telecom.payment.payment_service.dto.GatewayRequest;
+import com.virtusa.telecom.payment.payment_service.dto.GatewayResponse;
+import com.virtusa.telecom.payment.payment_service.dto.SubscriptionCreatedEvent;
+import com.virtusa.telecom.payment.payment_service.entity.Payment;
+import com.virtusa.telecom.payment.payment_service.repository.PaymentRepository;
+import com.virtusa.telecom.payment.payment_service.systemconstants.PaymentMode;
+import com.virtusa.telecom.payment.payment_service.systemconstants.PaymentStatus;
+
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class PaymentService {
+
+    private final PaymentRepository paymentRepository;
+    private final PaymentGateway paymentGateway;
+    private final StreamBridge streamBridge;
+
+    @Transactional
+    public void processPayment(SubscriptionCreatedEvent event) {
+
+        if (paymentRepository.existsBySubscriptionId(event.getSubscriptionId())) {
+            return;
+        }
+
+        Payment payment = Payment.builder()
+                .subscriptionId(event.getSubscriptionId())
+                .userId(event.getUserId())
+                .amount(event.getAmount())
+                .status(PaymentStatus.PENDING)
+                .paymentMode(PaymentMode.CARD)
+                .build();
+
+        paymentRepository.save(payment);
+
+        GatewayResponse response = paymentGateway.charge(
+                GatewayRequest.builder()
+                        .subscriptionId(event.getSubscriptionId())
+                        .userId(event.getUserId())
+                        .amount(event.getAmount())
+                        .build()
+        );
+
+        if (response.isSuccess()) {
+            payment.setStatus(PaymentStatus.SUCCESS);
+            payment.setGatewayTransactionId(response.getTransactionId());
+
+            streamBridge.send("paymentSuccess-out-0",
+                    new PaymentSuccessEvent(
+                            payment.getId(),
+                            payment.getSubscriptionId(),
+                            payment.getUserId(),
+                            payment.getAmount()
+                    ));
+
+        } else {
+            payment.setStatus(PaymentStatus.FAILED);
+            payment.setFailureReason(response.getFailureReason());
+
+            streamBridge.send("paymentFailed-out-0",
+                    new PaymentFailedEvent(
+                            payment.getSubscriptionId(),
+                            payment.getUserId(),
+                            response.getFailureReason()
+                    ));
+        }
+    }
+}

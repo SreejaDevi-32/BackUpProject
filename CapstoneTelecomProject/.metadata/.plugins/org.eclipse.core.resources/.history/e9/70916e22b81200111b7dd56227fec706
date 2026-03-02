@@ -1,0 +1,15 @@
+package com.virtusa.telecom.payment.payment_service.service;
+
+import java.math.BigDecimal;
+
+import com.stripe.exception.StripeException;
+import com.stripe.model.PaymentIntent;
+
+public interface StripePaymentService {
+	PaymentIntent createPaymentIntent(
+            BigDecimal amount,
+            Long subscriptionId,
+            String userId
+    ) throws StripeException;
+
+}

@@ -1,0 +1,9 @@
+package com.virtusa.telecom.payment.payment_service.service;
+
+import com.virtusa.telecom.payment.payment_service.dto.SubscriptionCreatedEvent;
+
+public interface PaymentService {
+	
+	public void processPayment(SubscriptionCreatedEvent event);
+
+}

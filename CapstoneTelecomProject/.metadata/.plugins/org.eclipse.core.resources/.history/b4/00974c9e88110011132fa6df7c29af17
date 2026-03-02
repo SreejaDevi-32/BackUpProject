@@ -1,0 +1,36 @@
+package com.virtusa.telecom.payment.payment_service.service;
+
+import org.springframework.stereotype.Service;
+
+import com.virtusa.telecom.payment.payment_service.dto.SubscriptionCreatedEvent;
+import com.virtusa.telecom.payment.payment_service.repository.PaymentRepository;
+
+import lombok.RequiredArgsConstructor;
+
+
+@Service
+@RequiredArgsConstructor
+public class PaymentServiceImpl implements PaymentService{
+	
+	private final PaymentRepository paymentRepository;
+
+	@Override
+	public void processPayment(SubscriptionCreatedEvent event) {
+		// TODO Auto-generated method stub
+		 if (paymentRepository.existsBySubscriptionId(event.getSubscriptionId())) {
+	            return;
+	        }
+
+	        Payment payment = Payment.builder()
+	                .subscriptionId(event.getSubscriptionId())
+	                .userId(event.getUserId())
+	                .amount(event.getAmount())
+	                .status(PaymentStatus.PENDING)
+	                .build();
+
+	        paymentRepository.save(payment);
+
+		
+	}
+
+}

@@ -1,0 +1,25 @@
+package com.virtusa.telecom.payment.payment_service.functions;
+
+import java.util.function.Consumer;
+
+import org.springframework.context.annotation.Configuration;
+
+import com.virtusa.telecom.payment.payment_service.dto.SubscriptionCreatedEvent;
+import com.virtusa.telecom.payment.payment_service.service.PaymentService;
+
+import lombok.extern.slf4j.Slf4j;
+
+
+@Configuration
+@Slf4j
+public class PaymentFunctions {
+	
+	public Consumer<SubscriptionCreatedEvent> subscriptionCreated(PaymentService paymentService){
+		return event ->{
+			log.info("Subscription Created Payment Started: {}",event);
+			paymentService.processPayment(event);
+		}
+		
+	}
+
+}

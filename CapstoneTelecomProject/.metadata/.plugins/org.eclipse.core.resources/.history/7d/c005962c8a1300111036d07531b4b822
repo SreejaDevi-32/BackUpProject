@@ -1,0 +1,5 @@
+package com.virtusa.telecom.notification.notification_service.config;
+
+public class KafkaConfig {
+
+}

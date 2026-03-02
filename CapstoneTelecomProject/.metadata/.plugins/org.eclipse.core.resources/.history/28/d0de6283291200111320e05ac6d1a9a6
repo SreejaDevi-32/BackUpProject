@@ -1,0 +1,90 @@
+package com.virtusa.telecom.plans.plan_service.service;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+
+import com.virtusa.telecom.plans.plan_service.dto.CreatePlanRequest;
+import com.virtusa.telecom.plans.plan_service.dto.PlanDto;
+import com.virtusa.telecom.plans.plan_service.dto.PlanResponse;
+import com.virtusa.telecom.plans.plan_service.entity.Plan;
+import com.virtusa.telecom.plans.plan_service.exception.DataNotFoundException;
+import com.virtusa.telecom.plans.plan_service.exception.DuplicatePlanException;
+import com.virtusa.telecom.plans.plan_service.repository.PlanRepository;
+import com.virtusa.telecom.plans.plan_service.systemconstants.PlanType;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class PlanServiceImpl implements PlanService{
+	
+	private final PlanRepository planRepo;
+
+	@Override
+	public List<PlanResponse> searchPlans(PlanType type, BigDecimal minPrice, BigDecimal maxPrice, Integer dataLimit,
+			Pageable pageable) {
+		
+		//return planRepo.searchPlans(type,minPrice,maxPrice,dataLimit,pageable).map(this::mapToDto);
+		Page<Plan> pageResult = planRepo.searchPlans(type,minPrice,maxPrice,dataLimit,pageable);
+		if(pageResult.hasContent())
+		{
+			return pageResult.map(this::mapToDto)
+							.getContent();
+		}
+		else {
+			throw new DataNotFoundException("Data Not Found");
+		}
+				
+		
+	}
+	
+	public PlanResponse createPlan(CreatePlanRequest request) {
+		if (planRepo.existsByName(request.getName())) {
+	        throw new DuplicatePlanException(
+	                "Plan with name '" + request.getName() + "' already exists");
+	    }
+	    Plan plan = new Plan();
+	    
+	    BeanUtils.copyProperties(request, plan);
+
+	    Plan savedPlan = planRepo.save(plan);
+	    return mapToDto(savedPlan);
+	}
+
+
+	
+	private PlanResponse mapToDto(Plan plan) {
+		return new PlanResponse(
+				plan.getId(),
+				plan.getName(),
+				plan.getType().toString(),
+				plan.getDataLimitGb(),
+				plan.getPrice(),
+				plan.getFeatures(),
+				plan.getValidityDays());
+				
+	}
+
+	@Override
+	public PlanDto getPlanById(UUID id) {
+		// TODO Auto-generated method stub
+		Optional<Plan> existingPlan = planRepo.findById(id);
+		if(existingPlan.isPresent()) {
+			PlanDto planDto = new PlanDto();
+			BeanUtils.copyProperties(existingPlan.get(), planDto);
+			return planDto;
+		}
+		throw new DataNotFoundException("Data Not Found");
+	}
+	
+
+}

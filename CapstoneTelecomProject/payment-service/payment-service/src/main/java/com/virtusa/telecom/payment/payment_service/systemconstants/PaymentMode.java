@@ -1,0 +1,9 @@
+package com.virtusa.telecom.payment.payment_service.systemconstants;
+
+public enum PaymentMode {
+	WALLET,
+	BANK,
+	TELCO,
+	CARD
+
+}

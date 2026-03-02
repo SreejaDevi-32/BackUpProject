@@ -1,0 +1,44 @@
+package com.virtusa.telecom.payment.payment_service.service;
+
+import java.math.BigDecimal;
+
+import org.springframework.beans.factory.annotation.Value;
+
+import com.stripe.Stripe;
+import com.stripe.exception.StripeException;
+import com.stripe.model.PaymentIntent;
+import com.stripe.param.PaymentIntentCreateParams;
+
+import jakarta.annotation.PostConstruct;
+
+public class StripePaymentServiceImpl implements StripePaymentService{
+
+	@Value("${stripe.secret.key}")
+	private String stripeKey;
+	
+	@PostConstruct
+	void init() {
+		Stripe.apiKey= stripeKey;
+	}
+
+	@Override
+	public PaymentIntent createPaymentIntent(BigDecimal amount, String txRef, Long userId) throws StripeException {
+		
+		long stripeAmount = amount
+                .multiply(BigDecimal.valueOf(100))
+                .longValue();
+		
+		PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
+											.setAmount(stripeAmount)
+											.setCurrency("usd")
+											.putMetadata("transactionRef", txRef)
+											.putMetadata("userId", userId.toString())
+											.build();
+
+			return PaymentIntent.create(params);
+	}
+	
+	
+	
+
+}
